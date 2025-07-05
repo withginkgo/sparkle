@@ -27,7 +27,7 @@ jobs:
             format: appimage
           - os: ubuntu-latest
             arch: x64
-            format: tarball 
+            format: tar.gz
 
 
     name: Build ${{ matrix.os }}-${{ matrix.arch }}${{ matrix.format && '-' || '' }}${{ matrix.format || '' }}
