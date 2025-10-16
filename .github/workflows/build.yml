@@ -25,7 +25,7 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x64
-            format: tar 
+            format: tar.gz 
 
     # 作业名称会反映新的单一场景
     name: Build ${{ matrix.os }}-${{ matrix.arch }}${{ matrix.format && '-' || '' }}${{ matrix.format || '' }}
