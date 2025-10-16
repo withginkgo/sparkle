@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           # 已修改：明确使用 'tar' 格式和 x64 架构进行 Linux 构建
-          pnpm build:linux tar --x64
+          pnpm build:linux tar.gz --x64
 
       # 针对 Windows 和 loong64 的特殊处理步骤已被移除或跳过
 
