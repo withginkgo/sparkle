@@ -17,13 +17,19 @@ on:
       - '.github/workflows/issues.yml'
 
 jobs:
-  build-linux-tarball:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        arch: [x64]
-        format: [tar.gz]
-    name: Build Linux amd64 tarball ${{ matrix.format }}
+        # 已修改：只针对 ubuntu-latest, x64, 并使用 'tar' 格式编译。
+        include:
+          - os: ubuntu-latest
+            arch: x64
+            format: tar 
+
+    # 作业名称会反映新的单一场景
+    name: Build ${{ matrix.os }}-${{ matrix.arch }}${{ matrix.format && '-' || '' }}${{ matrix.format || '' }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,11 +60,11 @@ jobs:
           jq --arg version "$RELEASE_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
 
       - name: Keep product name lowercase on Linux
-        run: sed -i "s/productName: Sparkle/productName: sparkle/" electron-builder.yml
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sed -i "s/productName: Sparkle/productName: sparkle/" electron-builder.yml
 
-      - name: Install Build Tools
-        if: matrix.format == 'pacman'
-        run: sudo apt-get update && sudo apt-get install -y libarchive-tools
+      # 仅针对 loong64 和 pacman 的步骤已被移除或跳过
 
       - name: Install Dependencies and Prepare
         env:
@@ -74,12 +80,17 @@ jobs:
           npm_config_arch: ${{ matrix.arch }}
           npm_config_target_arch: ${{ matrix.arch }}
         shell: bash
-        run: pnpm build:linux ${{ matrix.format }} --${{ matrix.arch }}
+        run: |
+          # 已修改：明确使用 'tar' 格式和 x64 架构进行 Linux 构建
+          pnpm build:linux tar --x64
+
+      # 针对 Windows 和 loong64 的特殊处理步骤已被移除或跳过
 
       - name: Create Changelog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: git log -1 --pretty=format:"%s%n%b" > changelog.md
+        run: |
+          git log -1 --pretty=format:"%s%n%b" > changelog.md
 
       - name: Generate latest.yml
         shell: bash
@@ -88,14 +99,17 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-amd64-tarball
+          name: ${{ matrix.os }}-${{ matrix.arch }}${{ matrix.format && '-' || '' }}${{ matrix.format || '' }}
           path: |
-            dist/sparkle-linux-*.tar.gz
+            dist/sparkle*
+            !dist/sparkle.app.plist
+            !dist/sparkle*blockmap*
             latest.yml
             changelog.md
 
   pre-release:
-    needs: [build-linux-tarball]
+    # 此作业依赖于 build，无需更改
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -130,10 +144,12 @@ jobs:
           files: |
             bin/latest.yml
             bin/dist/*
+          prerelease: true
 
   release:
+    # 此作业依赖于 build，无需更改
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.version != '')
-    needs: [build-linux-tarball]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -216,4 +232,4 @@ jobs:
           body_path: changelog.md
           files: |
             latest.yml
-            bin/dist/sparkle-linux-*.tar.gz
+            bin/dist/*
