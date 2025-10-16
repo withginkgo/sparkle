@@ -25,6 +25,7 @@ protocols:
     - 'mihomo'
     - 'sparkle'
 win:
+  # 保留 Windows 配置，但由于 GitHub Actions 已经被限制，这些将不会被构建。
   target:
     - nsis
     - 7z
@@ -37,6 +38,7 @@ nsis:
   perMachine: true
   createDesktopShortcut: true
 mac:
+  # 保留 macOS 配置，但由于 GitHub Actions 已经被限制，这些将不会被构建。
   target:
     - pkg
   entitlementsInherit: build/entitlements.mac.plist
@@ -59,12 +61,16 @@ linux:
       Name: Sparkle
       MimeType: 'x-scheme-handler/clash;x-scheme-handler/mihomo;x-scheme-handler/sparkle'
   target:
-    - deb
-    - rpm
-    - pacman
+    # 关键修改：只保留 tar.gz 格式（'tar' 是常用的 electron-builder 别名）
+    - tar.gz
+    # - deb # 已删除
+    # - rpm # 已删除
+    # - pacman # 已删除
   maintainer: xishang0128
   category: Utility
+  # 由于只构建 tar.gz，可以简化 artifactName
   artifactName: ${name}-linux-${version}-${arch}.${ext}
+# 以下特定格式的配置不再需要，因为它们已从 target 中删除，但保留也不会影响 tar.gz 构建。
 deb:
   afterInstall: 'build/linux/postinst'
 rpm:
